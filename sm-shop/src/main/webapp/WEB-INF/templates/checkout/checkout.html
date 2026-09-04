@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!--
+  checkout.html — Checkout start page (Thymeleaf template)
+
+  TASK-008: Currency selector component added.
+  - #store-context hidden div exposes server-side storeCode and fallback
+    state to JavaScript (FR-05 / NFR-03).
+  - #currency-selector-container renders the accessible currency dropdown
+    (AC-01 / NFR-07).
+  - #currency-fallback-banner is shown by JS when currencyFallbackApplied=true
+    (AC-04 / FR-03).
+  - checkout-currency-selector.js is included at the bottom of <body>.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout(~{::title}, ~{::main})}">
+
+<head>
+  <title th:text="#{checkout.page.title}">Checkout</title>
+</head>
+
+<body>
+<main>
+
+  <!--
+    Hidden context element: exposes server-rendered store metadata to JS.
+    storeCode is resolved server-side from the request context (FR-05 / NFR-03).
+    currencyFallbackApplied is set by the controller when the session currency
+    is not in the store's enabled list (FR-03 / NFR-05).
+  -->
+  <div id="store-context"
+       th:data-store-code="${storeCode}"
+       th:data-fallback-applied="${currencyFallbackApplied}"
+       th:data-fallback-currency="${fallbackCurrencyCode}"
+       th:data-session-currency="${sessionCurrencyCode}"
+       style="display:none;"
+       aria-hidden="true"></div>
+
+  <!-- ============================================================
+       Currency Selector (AC-01, AC-02, AC-04, AC-05, NFR-07)
+       The <select> is populated by checkout-currency-selector.js
+       after fetching /api/v1/store/{storeCode}/currencies.
+       ============================================================ -->
+  <div id="currency-selector-container">
+    <!--
+      Accessible label (NFR-07): visible <label> linked via `for` attribute,
+      plus aria-label on the <select> for screen-reader redundancy.
+    -->
+    <label for="currency-selector" th:text="#{checkout.currency.label}">Currency</label>
+    <select id="currency-selector"
+            name="currency"
+            aria-label="Select currency"
+            aria-describedby="currency-fallback-banner">
+      <!--
+        Options are injected at runtime by checkout-currency-selector.js
+        from the /api/v1/store/{storeCode}/currencies response (AC-02).
+        No options are hard-coded here to ensure per-store scoping (AC-05).
+      -->
+    </select>
+  </div>
+
+  <!--
+    Fallback banner (AC-04 / FR-03 / NFR-05):
+    Hidden by default; shown by JS when data-fallback-applied="true".
+    role="alert" + aria-live="polite" ensures screen readers announce it
+    without interrupting the user (NFR-07).
+  -->
+  <div id="currency-fallback-banner"
+       style="display:none;"
+       role="alert"
+       aria-live="polite">
+    <span th:text="#{checkout.currency.fallback.prefix}">
+      Your selected currency is not available for this store. Displaying prices in
+    </span>
+    <span id="fallback-currency-name"></span><span>.</span>
+  </div>
+
+  <!-- ============================================================
+       Checkout form content
+       (existing checkout form markup goes here)
+       ============================================================ -->
+  <div id="checkout-form-container">
+    <!-- TODO: existing checkout form markup preserved here -->
+  </div>
+
+</main>
+
+<!--
+  checkout-currency-selector.js is loaded at the end of <body> so that
+  the DOM elements above are already parsed when the script runs.
+  th:src resolves the context-relative path correctly in all deployments.
+-->
+<script th:src="@{/static/js/checkout-currency-selector.js}"></script>
+
+</body>
+</html>
